@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Smart Finance Quiz - Booth Edition</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css" rel="stylesheet">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;600;700;800&display=swap');
+        :root { --smart-green: #15803d; --smart-red: #dc2626; --smart-orange: #f97316; }
+        body { font-family: 'Plus Jakarta Sans', sans-serif; background: radial-gradient(circle at top right, #16a34a, #14532d); min-height: 100vh; overflow-x: hidden; }
+        .glass-card { background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(20px); border: 1px solid rgba(255, 255, 255, 0.3); box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25); }
+        .btn-gradient { background: linear-gradient(135deg, var(--smart-orange), var(--smart-red)); transition: all 0.3s ease; }
+        .btn-gradient:active { transform: scale(0.95); }
+        .option-card { transition: all 0.2s ease; border: 2px solid #f3f4f6; }
+        .option-card:active { border-color: var(--smart-orange); background: #fff7ed; }
+        .floating { animation: floating 3s ease-in-out infinite; }
+        @keyframes floating { 0%, 100% { transform: translateY(0px); } 50% { transform: translateY(-15px); } }
+        .snow-particle { position: fixed; background: white; border-radius: 50%; pointer-events: none; z-index: 50; opacity: 0.8; }
+    </style>
+</head>
+<body class="flex items-center justify-center p-4">
+
+    <div id="app" class="max-w-md w-full">
+        <div class="glass-card rounded-[2.5rem] overflow-hidden animate__animated animate__fadeIn">
+            
+            <div id="tracker" class="px-8 mt-6 hidden">
+                <div class="flex justify-between text-[10px] font-bold text-gray-400 mb-1 uppercase">
+                    <span>Pertanyaan</span>
+                    <span id="step-count">1/10</span>
+                </div>
+                <div class="w-full bg-gray-100 h-1.5 rounded-full overflow-hidden">
+                    <div id="progress-bar" class="h-full w-0 bg-orange-500 transition-all duration-300"></div>
+                </div>
+            </div>
+
+            <div id="content-area" class="p-8">
+                
+                <div id="screen-welcome" class="text-center">
+                    <div class="mb-6 floating">
+                        <img src="Logo Smart.jpg" alt="Logo" class="w-48 h-48 object-cover mx-auto rounded-[2rem] shadow-xl border-4 border-white">
+                    </div>
+                    <h1 class="text-3xl font-black text-gray-800 mb-2">Smart Finance Quiz</h1>
+                    <p class="text-gray-500 mb-8 text-sm">Selesaikan 10 tantangan kuis dan klaim hadiah menarik di Booth kami!</p>
+                    <button onclick="changeScreen('screen-quiz')" class="btn-gradient w-full py-4 rounded-2xl text-white font-bold text-lg shadow-lg uppercase tracking-wider">
+                        Mulai Sekarang
+                    </button>
+                </div>
+
+                <div id="screen-quiz" class="hidden">
+                    <h2 id="q-text" class="text-xl font-bold text-gray-800 mb-6 min-h-[60px]">Memuat...</h2>
+                    <div id="options-list" class="space-y-3"></div>
+                </div>
+
+                <div id="screen-form" class="hidden text-center">
+                    <div class="text-smart-green text-5xl mb-4"><i class="fas fa-check-circle"></i></div>
+                    <h2 class="text-2xl font-black text-gray-800 mb-2">Kuis Selesai!</h2>
+                    <p class="text-gray-500 text-sm mb-6">Masukkan data Anda untuk klaim skor & hadiah.</p>
+                    <div class="space-y-4">
+                        <input type="text" id="name" placeholder="Nama Lengkap" class="w-full p-4 bg-gray-50 border-2 border-gray-100 rounded-xl outline-none focus:border-smart-green font-semibold">
+                        <input type="tel" id="phone" placeholder="Nomor WhatsApp" class="w-full p-4 bg-gray-50 border-2 border-gray-100 rounded-xl outline-none focus:border-smart-green font-semibold">
+                        <button onclick="finishQuiz()" class="btn-gradient w-full py-4 rounded-xl text-white font-black text-lg shadow-lg">
+                            KLAIM HADIAH <i class="fab fa-whatsapp ml-2"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <div id="screen-result" class="hidden text-center animate__animated animate__zoomIn">
+                    <div class="w-24 h-24 rounded-full bg-white border-8 border-smart-green flex items-center justify-center mx-auto mb-4">
+                        <span id="final-score" class="text-3xl font-black text-smart-green">0</span>
+                    </div>
+                    <h2 class="text-xl font-bold text-gray-800">Skor Anda Terkirim!</h2>
+                    <p class="text-gray-500 text-xs mt-2 mb-6 tracking-tight">Tunjukkan layar ini ke petugas jika aplikasi WhatsApp tidak terbuka otomatis.</p>
+                    <div class="bg-gray-800 p-4 rounded-2xl mb-4">
+                        <p class="text-[10px] text-orange-400 font-bold uppercase">Kode Verifikasi</p>
+                        <p id="promo-code" class="text-2xl font-mono text-white font-black">---</p>
+                    </div>
+                    <button onclick="location.reload()" class="text-gray-400 text-xs underline">Ulangi Kuis</button>
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const MY_WHATSAPP = "6281519277552";
+        const quizData = [
+            { q: "Apa keunggulan utama Smart Finance?", options: ["Proses Cepat & Bunga Ringan", "Bunga Sangat Tinggi", "Syarat Berbelit-belit"], correct: 0 },
+            { q: "Produk pinjaman apa yang menggunakan BPKB?", options: ["Alat Tulis", "Motor & Mobil", "Perabot Rumah"], correct: 1 },
+            { q: "Kantor Smart Finance Sorong ada di mana?", options: ["Kabupaten Jayapura", "Kota Jayapura", "Kota & Kabupaten Jayapura"], correct: 2 },
+            { q: "Layanan Smart Finance mencakup apa saja?", options: ["Hanya Tiket Pesawat", "Hanya Belanja Online", "Modal Usaha & Multiguna"], correct: 2 },
+            { q: "Lama proses pencairan Motor di Smart Finance?", options: ["Hanya 1 sd 3 Hari", "Menunggu 1 Bulan", "Menunggu 1 Tahun"], correct: 0 },
+            { q: "Syarat utama pengajuan pinjaman adalah?", options: ["Tanpa Dokumen", "KTP & Dokumen Pendukung", "Hanya Pas Foto"], correct: 1 },
+            { q: "Smart Finance diawasi secara resmi oleh?", options: ["Hanya Media Sosial", "OJK (Otoritas Jasa Keuangan)", "Toko Bangunan"], correct: 1 },
+            { q: "Pilihan tenor di Smart Finance tersedia hingga?", options: ["Hanya 12 Bulan", "Hanya 24 Bulan", "12 Bulan sd 48 Bulan"], correct: 2 },
+            { q: "Apakah Smart Finance bisa Take Over?", options: ["Masih Rahasia", "Sama Sekali Tidak", "Ya, Bisa Melayani"], correct: 2 },
+            { q: "Limit maksimal pencairan mobil di Smart Finance?", options: ["100 Juta", "1 Miliar", "Hingga 2 Miliar"], correct: 2 }
+        ];
+
+        let currentIdx = 0; let score = 0;
+
+        function changeScreen(id) {
+            ['screen-welcome', 'screen-quiz', 'screen-form', 'screen-result'].forEach(s => document.getElementById(s).classList.add('hidden'));
+            document.getElementById(id).classList.remove('hidden');
+            if(id === 'screen-quiz') { document.getElementById('tracker').classList.remove('hidden'); loadQuestion(); }
+        }
+
+        function loadQuestion() {
+            const data = quizData[currentIdx];
+            document.getElementById('step-count').innerText = `${currentIdx + 1}/${quizData.length}`;
+            document.getElementById('q-text').innerText = data.q;
+            const list = document.getElementById('options-list');
+            list.innerHTML = '';
+            data.options.forEach((opt, i) => {
+                const btn = document.createElement('button');
+                btn.className = "option-card w-full text-left p-4 bg-white rounded-xl font-bold text-gray-700 shadow-sm";
+                btn.innerText = opt;
+                btn.onclick = () => {
+                    if(i === data.correct) score += 10;
+                    currentIdx++;
+                    if(currentIdx < quizData.length) loadQuestion();
+                    else changeScreen('screen-form');
+                };
+                list.appendChild(btn);
+            });
+            document.getElementById('progress-bar').style.width = `${((currentIdx + 1) / quizData.length) * 100}%`;
+        }
+
+        function finishQuiz() {
+            const name = document.getElementById('name').value;
+            const phone = document.getElementById('phone').value;
+            if(!name || !phone) { alert("Isi nama dan No WA!"); return; }
+
+            const promoCode = "SF-" + Math.random().toString(36).substring(2, 7).toUpperCase();
+            document.getElementById('final-score').innerText = score;
+            document.getElementById('promo-code').innerText = promoCode;
+            
+            const text = `*DATA KUIS BOOTH SMART FINANCE*%0A*Nama:* ${name}%0A*WA:* ${phone}%0A*Skor:* ${score}/100%0A*Kode:* ${promoCode}`;
+            
+            // REKOMENDASI UNTUK IPHONE: Langsung pindah halaman, jangan pakai window.open
+            changeScreen('screen-result');
+            setTimeout(() => {
+                window.location.href = `https://wa.me/${MY_WHATSAPP}?text=${text}`;
+            }, 500);
+        }
+
+        // Efek Salju
+        setInterval(() => {
+            const snow = document.createElement('div');
+            snow.classList.add('snow-particle');
+            snow.style.left = Math.random() * 100 + 'vw';
+            snow.style.top = '-10px';
+            snow.style.width = Math.random() * 5 + 2 + 'px';
+            snow.style.height = snow.style.width;
+            document.body.appendChild(snow);
+            snow.animate([{ transform: 'translateY(0)', opacity: 1 }, { transform: 'translateY(100vh)', opacity: 0 }], { duration: 3000 });
+            setTimeout(() => snow.remove(), 3000);
+        }, 300);
+    </script>
+</body>
+</html>
